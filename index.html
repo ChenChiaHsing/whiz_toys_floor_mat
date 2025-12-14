@@ -1,43 +1,50 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>WhizToys 智慧地墊控制</title>
+  <title>WhizToys Smart Mat Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>WhizToys 智慧地墊控制</h1>
+    <h1 data-i18n="header_title">WhizToys Smart Mat Control</h1>
+    <div class="lang-switcher">
+      <label for="langSelect" data-i18n="label_language">Language:</label>
+      <select id="langSelect">
+        <option value="en">English</option>
+        <option value="zh-Hant">繁體中文</option>
+      </select>
+    </div>
   </header>
 
   <main>
     <section class="card">
-      <h2>連線</h2>
-      <button id="connectBtn">連線藍牙裝置</button>
-      <p id="connectionStatus">狀態：尚未連線</p>
+      <h2 data-i18n="section_connect_title">Connection</h2>
+      <button id="connectBtn" data-i18n="connect_button">Connect Bluetooth device</button>
+      <p id="connectionStatus" data-i18n="connection_status_initial">Status: Not connected</p>
     </section>
 
     <section class="card">
-      <h2>Layout 資訊</h2>
-      <button id="readLayoutBtn" disabled>讀取 Layout</button>
-      <p id="layoutInfo">尚未讀取</p>
+      <h2 data-i18n="section_layout_title">Layout Info</h2>
+      <button id="readLayoutBtn" disabled data-i18n="read_layout_button">Read Layout</button>
+      <p id="layoutInfo" data-i18n="layout_info_initial">Not read yet</p>
       <pre id="layoutRaw" class="pre-box"></pre>
     </section>
 
     <section class="card">
-      <h2>感測事件</h2>
-      <p>最近幾筆感測變化：</p>
+      <h2 data-i18n="section_sensor_title">Sensor Events</h2>
+      <p data-i18n="sensor_recent_label">Recent sensor changes:</p>
       <ul id="sensorEvents" class="events-list"></ul>
     </section>
 
     <section class="card">
-      <h2>燈光控制（示範）</h2>
+      <h2 data-i18n="section_led_title">Light Control (Demo)</h2>
       <div class="controls-row">
-        <button id="allRedBtn" disabled>全部亮（使用下方顏色）</button>
-        <button id="allOffBtn" disabled>全部關燈</button>
+        <button id="allRedBtn" disabled data-i18n="all_on_button">Turn all on (use color below)</button>
+        <button id="allOffBtn" disabled data-i18n="all_off_button">Turn all off</button>
       </div>
-      <p class="hint">※ 建議先按一次「讀取 Layout」按鈕，取得完整行列資訊後再使用全部亮/全部關。</p>
+      <p class="hint" data-i18n="hint_all_on_off">Tip: Read layout once first to get full row/column info, then use the all-on/all-off buttons.</p>
       <div class="controls-row">
         <label>
           Row:
@@ -48,32 +55,32 @@
           <input type="number" id="singleCol" min="0" max="15" value="0" />
         </label>
         <label>
-          顏色索引:
+          <span data-i18n="label_color_index">Color index:</span>
           <input type="number" id="singleColor" min="0" max="61" value="21" />
         </label>
       </div>
       <div class="controls-row color-row">
-        <span class="preset-label">主要顏色快選：</span>
+        <span class="preset-label" data-i18n="preset_label">Main color presets:</span>
         <div class="color-preset-group">
-          <button type="button" class="color-preset" data-color="1">紅 (01)</button>
-          <button type="button" class="color-preset" data-color="11">黃 (11)</button>
-          <button type="button" class="color-preset" data-color="21">綠 (21)</button>
-          <button type="button" class="color-preset" data-color="31">淺藍 (31)</button>
-          <button type="button" class="color-preset" data-color="41">藍 (41)</button>
-          <button type="button" class="color-preset" data-color="51">紫 (51)</button>
-          <button type="button" class="color-preset" data-color="61">白 (61)</button>
+          <button type="button" class="color-preset" data-color="1" data-i18n="color_red">Red (01)</button>
+          <button type="button" class="color-preset" data-color="11" data-i18n="color_yellow">Yellow (11)</button>
+          <button type="button" class="color-preset" data-color="21" data-i18n="color_green">Green (21)</button>
+          <button type="button" class="color-preset" data-color="31" data-i18n="color_light_blue">Light blue (31)</button>
+          <button type="button" class="color-preset" data-color="41" data-i18n="color_blue">Blue (41)</button>
+          <button type="button" class="color-preset" data-color="51" data-i18n="color_purple">Purple (51)</button>
+          <button type="button" class="color-preset" data-color="61" data-i18n="color_white">White (61)</button>
         </div>
       </div>
       <div class="controls-row">
-        <button id="singleGreenBtn" disabled>指定格亮燈</button>
-        <button id="singleOffBtn" disabled>指定格關燈</button>
+        <button id="singleGreenBtn" disabled data-i18n="single_on_button">Light specific cell</button>
+        <button id="singleOffBtn" disabled data-i18n="single_off_button">Turn off specific cell</button>
       </div>
-      <p class="hint">* 以上為示範指令，實際效果需依裝置韌體為準。</p>
+      <p class="hint" data-i18n="hint_demo">* Commands above are for demonstration; actual behavior depends on device firmware.</p>
     </section>
   </main>
 
   <footer>
-    <small>僅支援啟用 Web Bluetooth 的瀏覽器（如 Chrome / Edge，需 HTTPS 或 localhost）。</small>
+    <small data-i18n="footer_note">Only browsers with Web Bluetooth enabled are supported (e.g. Chrome / Edge over HTTPS or localhost).</small>
   </footer>
 
   <script src="main.js"></script>

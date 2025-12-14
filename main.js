@@ -1,8 +1,184 @@
+
 // 簡易 WhizToys 智慧地墊 Web Bluetooth 控制
 
 // 這裡使用已知的 Custom Service UUID 與三個 characteristics
 // 若裝置實作僅接受 16-bit UUID（fee0/fee1/fee2/fee3），
 // 測試時可以改成 'fee0' 等字串形式。
+
+// --- 簡易多語系設定（預設英文，可切換繁體中文） ---
+const LANG_EN = 'en';
+const LANG_ZH = 'zh-Hant';
+
+let currentLang = LANG_EN;
+
+const translations = {
+  [LANG_EN]: {
+    title: 'WhizToys Smart Mat Control',
+    header_title: 'WhizToys Smart Mat Control',
+    label_language: 'Language:',
+    section_connect_title: 'Connection',
+    connect_button: 'Connect Bluetooth device',
+    connection_status_initial: 'Status: Not connected',
+    section_layout_title: 'Layout Info',
+    read_layout_button: 'Read Layout',
+    layout_info_initial: 'Not read yet',
+    section_sensor_title: 'Sensor Events',
+    sensor_recent_label: 'Recent sensor changes:',
+    section_led_title: 'Light Control (Demo)',
+    all_on_button: 'Turn all on (use color below)',
+    all_off_button: 'Turn all off',
+    hint_all_on_off:
+      'Tip: Read layout once first to get full row/column info, then use the all-on/all-off buttons.',
+    label_color_index: 'Color index:',
+    preset_label: 'Main color presets:',
+    color_red: 'Red (01)',
+    color_yellow: 'Yellow (11)',
+    color_green: 'Green (21)',
+    color_light_blue: 'Light blue (31)',
+    color_blue: 'Blue (41)',
+    color_purple: 'Purple (51)',
+    color_white: 'White (61)',
+    single_on_button: 'Light specific cell',
+    single_off_button: 'Turn off specific cell',
+    hint_demo: '* Commands above are for demonstration; actual behavior depends on device firmware.',
+    footer_note:
+      'Only browsers with Web Bluetooth enabled are supported (e.g. Chrome / Edge over HTTPS or localhost).',
+    status_disconnected: 'Status: Not connected',
+    status_searching: 'Status: Searching for Bluetooth devices…',
+    status_connected: name => `Status: Connected to ${name || 'device'}`,
+    alert_no_bluetooth:
+      'This browser does not support Web Bluetooth. Please use Chrome / Edge over HTTPS or localhost.',
+    alert_connect_failed: msg => `Connection failed: ${msg}`,
+    alert_read_layout_failed: msg => `Read layout failed: ${msg}`,
+    alert_send_led_failed: msg => `Send LED command failed: ${msg}`,
+    layout_info: (rows, cols, checksumOk) =>
+      `Rows=${rows}, Cols=${cols}, checksum=${checksumOk ? 'OK' : 'NG'}`,
+    device_disconnected_event: 'Device disconnected',
+    connected_with_notify_event: 'Connected and sensor notifications enabled',
+    level_text: v => {
+      switch (v) {
+        case 0:
+          return 'No press';
+        case 1:
+          return 'Level_1';
+        case 2:
+          return 'Level_2';
+        case 3:
+          return 'Level_3';
+        default:
+          return 'Unknown';
+      }
+    },
+    sensor_event: ({ rowIndex, colIndex, leftTop, leftBottom, rightBottom, rightTop }) =>
+      `row=${rowIndex}, col=${colIndex}, sensors=[LT:${leftTop}, LB:${leftBottom}, RB:${rightBottom}, RT:${rightTop}]`,
+    error_no_led_write: 'This browser does not support writing to the LED characteristic (writeValue*).'
+  },
+  [LANG_ZH]: {
+    title: 'WhizToys 智慧地墊控制',
+    header_title: 'WhizToys 智慧地墊控制',
+    label_language: '介面語言：',
+    section_connect_title: '連線',
+    connect_button: '連線藍牙裝置',
+    connection_status_initial: '狀態：尚未連線',
+    section_layout_title: 'Layout 資訊',
+    read_layout_button: '讀取 Layout',
+    layout_info_initial: '尚未讀取',
+    section_sensor_title: '感測事件',
+    sensor_recent_label: '最近幾筆感測變化：',
+    section_led_title: '燈光控制（示範）',
+    all_on_button: '全部亮（使用下方顏色）',
+    all_off_button: '全部關燈',
+    hint_all_on_off:
+      '※ 建議先按一次「讀取 Layout」按鈕，取得完整行列資訊後再使用全部亮/全部關。',
+    label_color_index: '顏色索引:',
+    preset_label: '主要顏色快選：',
+    color_red: '紅 (01)',
+    color_yellow: '黃 (11)',
+    color_green: '綠 (21)',
+    color_light_blue: '淺藍 (31)',
+    color_blue: '藍 (41)',
+    color_purple: '紫 (51)',
+    color_white: '白 (61)',
+    single_on_button: '指定格亮燈',
+    single_off_button: '指定格關燈',
+    hint_demo: '* 以上為示範指令，實際效果需依裝置韌體為準。',
+    footer_note: '僅支援啟用 Web Bluetooth 的瀏覽器（如 Chrome / Edge，需 HTTPS 或 localhost）。',
+    status_disconnected: '狀態：尚未連線',
+    status_searching: '狀態：搜尋藍牙裝置中…',
+    status_connected: name => `狀態：已連線到 ${name || '裝置'}`,
+    alert_no_bluetooth: '此瀏覽器不支援 Web Bluetooth，請使用 Chrome / Edge 並在 HTTPS 或 localhost 環境。',
+    alert_connect_failed: msg => `連線失敗：${msg}`,
+    alert_read_layout_failed: msg => `讀取 Layout 失敗：${msg}`,
+    alert_send_led_failed: msg => `傳送燈光指令失敗：${msg}`,
+    layout_info: (rows, cols, checksumOk) =>
+      `行數(rows)=${rows}, 列數(cols)=${cols}, checksum=${checksumOk ? 'OK' : 'NG'}`,
+    device_disconnected_event: '裝置已斷線',
+    connected_with_notify_event: '已連線並啟用感測通知',
+    level_text: v => {
+      switch (v) {
+        case 0:
+          return '無按壓';
+        case 1:
+          return 'Level_1';
+        case 2:
+          return 'Level_2';
+        case 3:
+          return 'Level_3';
+        default:
+          return '未知';
+      }
+    },
+    sensor_event: ({ rowIndex, colIndex, leftTop, leftBottom, rightBottom, rightTop }) =>
+      `row=${rowIndex}, col=${colIndex}, sensors=[左上:${leftTop}, 左下:${leftBottom}, 右下:${rightBottom}, 右上:${rightTop}]`,
+    error_no_led_write: '此瀏覽器不支援寫入 LED 特徵 (writeValue*)'
+  }
+};
+
+function t(key, ...args) {
+  const dict = translations[currentLang] || translations[LANG_EN];
+  const value = dict[key];
+  if (typeof value === 'function') {
+    return value(...args);
+  }
+  return value != null ? value : key;
+}
+
+function applyStaticTranslations() {
+  // document title
+  document.title = t('title');
+  document.documentElement.lang = currentLang;
+
+  // elements with data-i18n
+  const elements = document.querySelectorAll('[data-i18n]');
+  elements.forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const text = t(key);
+    if (text) {
+      el.textContent = text;
+    }
+  });
+}
+
+function setLanguage(lang) {
+  currentLang = lang === LANG_ZH ? LANG_ZH : LANG_EN;
+  localStorage.setItem('whiz_lang', currentLang);
+  applyStaticTranslations();
+  // 依目前狀態更新幾個動態文字
+  updateConnectionStatusUI();
+}
+
+function initLanguage() {
+  const saved = localStorage.getItem('whiz_lang');
+  currentLang = saved === LANG_ZH ? LANG_ZH : LANG_EN;
+  const langSelect = document.getElementById('langSelect');
+  if (langSelect) {
+    langSelect.value = currentLang;
+    langSelect.addEventListener('change', () => {
+      setLanguage(langSelect.value);
+    });
+  }
+  applyStaticTranslations();
+}
 
 const SERVICE_UUID = '0000fee0-0000-1000-8000-00805f9b34fb';
 const LAYOUT_CHAR_UUID = '0000fee1-0000-1000-8000-00805f9b34fb';
@@ -34,10 +210,20 @@ const singleColInput = document.getElementById('singleCol');
 const singleColorInput = document.getElementById('singleColor');
 const colorPresetButtons = document.querySelectorAll('.color-preset');
 
+// 是否已連線，供語系切換時重算狀態文字
+let isConnected = false;
+
+function updateConnectionStatusUI() {
+  if (isConnected) {
+    connectionStatus.textContent = t('status_connected', device ? device.name : undefined);
+  } else {
+    connectionStatus.textContent = t('status_disconnected');
+  }
+}
+
 function setConnectedUI(connected) {
-  connectionStatus.textContent = connected
-    ? `狀態：已連線到 ${device ? device.name : '裝置'}`
-    : '狀態：尚未連線';
+  isConnected = connected;
+  updateConnectionStatusUI();
 
   readLayoutBtn.disabled = !connected;
   allRedBtn.disabled = !connected;
@@ -64,12 +250,12 @@ function appendSensorEvent(text) {
 
 async function connect() {
   if (!navigator.bluetooth) {
-    alert('此瀏覽器不支援 Web Bluetooth，請使用 Chrome / Edge 並在 HTTPS 或 localhost 環境。');
+    alert(t('alert_no_bluetooth'));
     return;
   }
 
   try {
-    connectionStatus.textContent = '狀態：搜尋藍牙裝置中…';
+    connectionStatus.textContent = t('status_searching');
 
     device = await navigator.bluetooth.requestDevice({
       // 依照 BLE Scanner 顯示的裝置名稱 WTS2 來篩選
@@ -104,10 +290,10 @@ async function connect() {
     sensorChar.addEventListener('characteristicvaluechanged', handleSensorNotify);
 
     setConnectedUI(true);
-    appendSensorEvent('已連線並啟用感測通知');
+    appendSensorEvent(t('connected_with_notify_event'));
   } catch (err) {
     console.error(err);
-    alert('連線失敗：' + err.message);
+    alert(t('alert_connect_failed', err.message));
     setConnectedUI(false);
   }
 }
@@ -148,7 +334,7 @@ async function onReadLayout() {
     layoutRows = parsed.rows;
     layoutCols = parsed.cols;
 
-    layoutInfo.textContent = `行數(rows)=${parsed.rows}, 列數(cols)=${parsed.cols}, checksum=${parsed.validChecksum ? 'OK' : 'NG'}`;
+    layoutInfo.textContent = t('layout_info', parsed.rows, parsed.cols, parsed.validChecksum);
 
     // 顯示部分原始內容 (hex)
     const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
@@ -158,7 +344,7 @@ async function onReadLayout() {
     layoutRaw.textContent = hex;
   } catch (err) {
     console.error(err);
-    alert('讀取 Layout 失敗：' + err.message);
+    alert(t('alert_read_layout_failed', err.message));
   }
 }
 
@@ -182,20 +368,7 @@ function handleSensorNotify(event) {
 
     // 依韌體文件：2bit 對應感測器狀態
     // 00: 無按壓, 01: Level_1, 10: Level_2, 11: Level_3
-    const levelText = v => {
-      switch (v) {
-        case 0:
-          return '無按壓';
-        case 1:
-          return 'Level_1';
-        case 2:
-          return 'Level_2';
-        case 3:
-          return 'Level_3';
-        default:
-          return '未知';
-      }
-    };
+    const levelText = v => translations[currentLang].level_text(v);
 
     // 依文件順序：左上、左下、右下、右上 四個位置
     const rightTop = `${s0}(${levelText(s0)})`;
@@ -204,7 +377,14 @@ function handleSensorNotify(event) {
     const leftTop = `${s3}(${levelText(s3)})`;
 
     appendSensorEvent(
-      `row=${rowIndex}, col=${colIndex}, sensors=[左上:${leftTop}, 左下:${leftBottom}, 右下:${rightBottom}, 右上:${rightTop}]`
+      translations[currentLang].sensor_event({
+        rowIndex,
+        colIndex,
+        leftTop,
+        leftBottom,
+        rightBottom,
+        rightTop
+      })
     );
   }
 }
@@ -251,11 +431,11 @@ async function sendLedCommand(entries) {
     } else if (typeof ledChar.writeValueWithResponse === 'function') {
       await ledChar.writeValueWithResponse(cmd);
     } else {
-      throw new Error('此瀏覽器不支援寫入 LED 特徵 (writeValue*)');
+      throw new Error(t('error_no_led_write'));
     }
   } catch (err) {
     console.error(err);
-    alert('傳送燈光指令失敗：' + err.message);
+    alert(t('alert_send_led_failed', err.message));
   }
 }
 
@@ -353,4 +533,6 @@ colorPresetButtons.forEach(btn => {
   });
 });
 
+// 初始化語系後再設定 UI 狀態
+initLanguage();
 setConnectedUI(false);
