@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>WhizToys 智慧地墊控制</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>WhizToys 智慧地墊控制</h1>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>連線</h2>
+      <button id="connectBtn">連線藍牙裝置</button>
+      <p id="connectionStatus">狀態：尚未連線</p>
+    </section>
+
+    <section class="card">
+      <h2>Layout 資訊</h2>
+      <button id="readLayoutBtn" disabled>讀取 Layout</button>
+      <p id="layoutInfo">尚未讀取</p>
+      <pre id="layoutRaw" class="pre-box"></pre>
+    </section>
+
+    <section class="card">
+      <h2>感測事件</h2>
+      <p>最近幾筆感測變化：</p>
+      <ul id="sensorEvents" class="events-list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>燈光控制（示範）</h2>
+      <div class="controls-row">
+        <button id="allRedBtn" disabled>全部亮（使用下方顏色）</button>
+        <button id="allOffBtn" disabled>全部關燈</button>
+      </div>
+      <p class="hint">※ 建議先按一次「讀取 Layout」按鈕，取得完整行列資訊後再使用全部亮/全部關。</p>
+      <div class="controls-row">
+        <label>
+          Row:
+          <input type="number" id="singleRow" min="0" max="15" value="0" />
+        </label>
+        <label>
+          Col:
+          <input type="number" id="singleCol" min="0" max="15" value="0" />
+        </label>
+        <label>
+          顏色索引:
+          <input type="number" id="singleColor" min="0" max="61" value="21" />
+        </label>
+      </div>
+      <div class="controls-row color-row">
+        <span class="preset-label">主要顏色快選：</span>
+        <div class="color-preset-group">
+          <button type="button" class="color-preset" data-color="1">紅 (01)</button>
+          <button type="button" class="color-preset" data-color="11">黃 (11)</button>
+          <button type="button" class="color-preset" data-color="21">綠 (21)</button>
+          <button type="button" class="color-preset" data-color="31">淺藍 (31)</button>
+          <button type="button" class="color-preset" data-color="41">藍 (41)</button>
+          <button type="button" class="color-preset" data-color="51">紫 (51)</button>
+          <button type="button" class="color-preset" data-color="61">白 (61)</button>
+        </div>
+      </div>
+      <div class="controls-row">
+        <button id="singleGreenBtn" disabled>指定格亮燈</button>
+        <button id="singleOffBtn" disabled>指定格關燈</button>
+      </div>
+      <p class="hint">* 以上為示範指令，實際效果需依裝置韌體為準。</p>
+    </section>
+  </main>
+
+  <footer>
+    <small>僅支援啟用 Web Bluetooth 的瀏覽器（如 Chrome / Edge，需 HTTPS 或 localhost）。</small>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
