@@ -1,0 +1,13 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "mat_presses": {
+      ".read": false,
+      ".write": "auth != null",
+      "$pushId": {
+        ".validate": "newData.hasChildren(['date','groupId','matNumber','sessionId','serverTime']) && newData.child('matNumber').isNumber() && newData.child('groupId').isNumber()"
+      }
+    }
+  }
+}

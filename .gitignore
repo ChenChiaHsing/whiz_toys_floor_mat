@@ -1,0 +1,6 @@
+# Local Firebase config (contains API keys / DB URL) - do not commit
+firebase-config.js
+
+# Optional: ignore node_modules or build outputs if present
+node_modules/
+dist/

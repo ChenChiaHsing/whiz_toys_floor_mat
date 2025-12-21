@@ -195,6 +195,30 @@ let ledChar = null;
 let layoutRows = 0;
 let layoutCols = 0;
 
+// Firebase / RTDB support
+let firebaseEnabled = false;
+let firebaseDb = null;
+let sessionId = null;
+const DEFAULT_GROUP_ID = 1; // per user request, default groupId = 1
+
+function initFirebase() {
+  try {
+    if (window && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) {
+      // using compat build included in index.html
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+      firebaseDb = firebase.database();
+      firebaseEnabled = true;
+      console.log('Firebase RTDB enabled');
+    } else {
+      console.log('Firebase config not provided; RTDB disabled');
+    }
+  } catch (err) {
+    console.error('Firebase init failed', err);
+    firebaseEnabled = false;
+    firebaseDb = null;
+  }
+}
+
 const connectBtn = document.getElementById('connectBtn');
 const connectionStatus = document.getElementById('connectionStatus');
 const readLayoutBtn = document.getElementById('readLayoutBtn');
@@ -291,6 +315,18 @@ async function connect() {
 
     setConnectedUI(true);
     appendSensorEvent(t('connected_with_notify_event'));
+    // create a session id for this connection (used when pushing events)
+    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    console.log('sessionId=', sessionId);
+
+    // Auto-read layout 1s after connection to populate rows/cols
+    setTimeout(() => {
+      try {
+        onReadLayout();
+      } catch (e) {
+        console.warn('Auto read layout failed', e);
+      }
+    }, 1000);
   } catch (err) {
     console.error(err);
     alert(t('alert_connect_failed', err.message));
@@ -386,6 +422,51 @@ function handleSensorNotify(event) {
         rightTop
       })
     );
+
+    // Push press event to Firebase Realtime Database when any of the 4 sensors indicates a press
+    try {
+      const anyPressed = [s0, s1, s2, s3].some(v => v > 0);
+      if (anyPressed && firebaseEnabled && firebaseDb) {
+        const cols = layoutCols > 0 ? layoutCols : 16; // fallback columns if layout not read
+        const matNumber = rowIndex * cols + colIndex + 1; // left-to-right, top-to-bottom numbering
+        const dateIso = new Date().toISOString();
+        const localized = new Date().toLocaleString('zh-Hant', { hour12: true });
+
+        const payload = {
+          date: dateIso,
+          groupId: DEFAULT_GROUP_ID,
+          matNumber,
+          sessionId,
+          timestamp: localized,
+          // server-assigned timestamp for reliable sorting/querying
+          serverTime: firebase.database.ServerValue.TIMESTAMP,
+          // add grid coordinates and layout size
+          rowIndex,
+          colIndex,
+          rows: layoutRows > 0 ? layoutRows : 0,
+          cols,
+          // per-position sensor values with text level mapping and Chinese names
+          sensors: {
+            leftTop: { code: s3, level: levelText(s3), nameZh: '左上' },
+            leftBottom: { code: s2, level: levelText(s2), nameZh: '左下' },
+            rightBottom: { code: s1, level: levelText(s1), nameZh: '右下' },
+            rightTop: { code: s0, level: levelText(s0), nameZh: '右上' }
+          },
+          // explicit binary-to-level mapping for reference
+          levelDefinitionsBinary: {
+            '00': levelText(0),
+            '01': levelText(1),
+            '10': levelText(2),
+            '11': levelText(3)
+          }
+        };
+
+        firebaseDb.ref('mat_presses').push(payload);
+        console.log('Firebase: pushed mat press', payload);
+      }
+    } catch (err) {
+      console.error('Failed to push to Firebase', err);
+    }
   }
 }
 
@@ -535,4 +616,6 @@ colorPresetButtons.forEach(btn => {
 
 // 初始化語系後再設定 UI 狀態
 initLanguage();
+// 初始化 Firebase（若在 index.html 提供 window.FIREBASE_CONFIG）
+initFirebase();
 setConnectedUI(false);
